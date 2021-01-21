@@ -5,7 +5,7 @@ export const useFetch = (inputUrl: string | undefined) => {
     const [response, setResponse] = useState<string>();
 
     const fetcher = useCallback(async (url, controller) => {
-        return await fetch(url, { signal: controller.signal })
+        return await fetch(url, { signal: controller.signal, cache: 'no-cache' })
           .then(response => response.json())
           .then(res => {
             setResponse(JSON.stringify(res));
@@ -14,7 +14,8 @@ export const useFetch = (inputUrl: string | undefined) => {
             if (error.name === 'AbortError') {
               console.log('Fetch was aborted.');
             } else {
-              console.error(`Something bad happened: ${error}`)
+              console.error(`Something bad happened: ${error}`);
+              setResponse(error.message);
             }
           });
       }, []);
@@ -30,6 +31,7 @@ export const useFetch = (inputUrl: string | undefined) => {
     
         const controller = new AbortController();
     
+        setResponse(undefined);
         timeoutRef.current = setTimeout(() => {
           fetcher(inputUrl, controller);
         }, 2000);
@@ -40,7 +42,7 @@ export const useFetch = (inputUrl: string | undefined) => {
           }
           controller.abort();
         };
-      }, [fetcher, inputUrl]);
+      }, [fetcher, inputUrl, setResponse]);
 
       return response;
 }

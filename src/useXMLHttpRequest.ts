@@ -8,24 +8,29 @@ export const useXMLHttpRequest = (inputUrl: string | undefined, debug: boolean) 
         const xhr = new XMLHttpRequest();
 
         if (debug) {
-            xhr.addEventListener('loadstart', handleEvent);
-            xhr.addEventListener('load', (e) => {
+            xhr.onloadstart = (e: ProgressEvent) => handleEvent(e);
+            xhr.onload = (e: ProgressEvent) => {
                 handleEvent(e);
                 if (xhr.readyState === XMLHttpRequest.DONE) {
                     setResponse(xhr.response);
                 }
-            });
-            xhr.addEventListener('progress', handleEvent);
-            xhr.addEventListener('error', handleEvent);
-            xhr.addEventListener('abort', handleEvent);
-            xhr.addEventListener('timeout', handleEvent);
+            };
+
+            // Progress can be used to show the loading of larger datasets. 
+            // This is more often useful on the xhr.upload.onprogress for POST calls.
+            xhr.onprogress = (e) => handleEvent(e);
+
+            xhr.onerror = (e) => setResponse(`Something bad happened: ${e}`);
+            xhr.onabort = (e) => handleEvent(e);
+            xhr.ontimeout = (e) => handleEvent(e);
         } else {
-            xhr.addEventListener('load', () => {
+            xhr.onload = (e) => {
                 if (xhr.readyState === XMLHttpRequest.DONE) {
                     setResponse(xhr.response);
                 }
-            });
-            xhr.addEventListener('abort', () => { console.log('Fetch was aborted.') });
+            };
+            xhr.onabort = () => console.log('Fetch was aborted.');
+            xhr.onerror = (e) => setResponse(`Something bad happened: ${e}`);
         }
 
         return xhr;
@@ -50,6 +55,7 @@ export const useXMLHttpRequest = (inputUrl: string | undefined, debug: boolean) 
 
         request.abort();
 
+        setResponse(undefined);
         timeoutRef.current = setTimeout(() => {
             getPokemon(inputUrl);
         }, 2000);
@@ -59,11 +65,12 @@ export const useXMLHttpRequest = (inputUrl: string | undefined, debug: boolean) 
                 clearTimeout(timeoutRef.current);
             }
         }
-    }, [getPokemon, inputUrl, request]);
+    }, [getPokemon, inputUrl, request, setResponse]);
 
     return response;
 }
 
-function handleEvent(e: ProgressEvent<XMLHttpRequestEventTarget>) {
+function handleEvent(e: ProgressEvent) {
+    // Should the server be returning Content-Length then we could report the e.total value.
     console.log(`${e.type}: ${e.loaded} bytes transferred\n`);
 }
