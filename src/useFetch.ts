@@ -19,6 +19,8 @@ export const useFetch = (inputUrl: string | undefined) => {
             }
           });
       }, []);
+
+    console.log("blah");
     
       useEffect(() => {
         if (!!timeoutRef.current) {
